@@ -3,9 +3,9 @@ Paperless Parts CAD Challenge
 
 Paperless Parts is a manufacturing intelligence startup, creating algorithms and statistical models for analyzing 3D geometries. We're looking for your help to create algorithms in Python and FreeCAD for identifying ten common design issues with uniform thickness parts that makes them hard or impossible to manufacture using processes like laser cutting, water jetting, and wire EDM.
 
-If you have experience with **Python and FreeCAD**, take a shot at completing this challenge. The first person or company to submit a working solution (before June 1, 2017) will receive a **$400 award**. 
+If you have experience with **Python and FreeCAD**, take a shot at completing this challenge. The first person or company to submit a working solution (before June 1, 2017) will receive a **$400 award**.
 
-*(In order for us to pay you, it has to be legal for us to do. Therefore, the award is restricted to a person or entity that can legally receive funds from a US business. If you are unsure, please contact us PRIOR to completing the challenge. You may have to pay taxes on this award; consult your tax professional.)*
+*(In order for us to pay you, it has to be legal for us to do so. Therefore, the award is restricted to a person or entity that can legally receive funds from a US business. If you are unsure, please contact us PRIOR to completing the challenge. You may have to pay taxes on this award; consult your tax professional.)*
 
 How to Participate
 ------------------
@@ -30,6 +30,6 @@ To test your solution, run the unit tests contained in `test.py`, which will che
 
 ### Submit your solution
 
-Once you have a solution that works, submit it via Pull Request on Github or by emailing your solution to scott@paperlessparts.com. By accepting an award for your solution, you are granting Paperless Parts, Inc. unlimited and perpetual rights to use and extend your solution commercially.
+Once you have a solution that works, submit it via Pull Request on Github or by emailing your solution to code@paperlessparts.com. By accepting an award for your solution, you are granting Paperless Parts, Inc. unlimited and perpetual rights to use and extend your solution commercially.
 
 You can also email us questions prior to solving the problem. We will try our best to respond in a timely manner.
