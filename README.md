@@ -30,6 +30,6 @@ To test your solution, run the unit tests contained in `test.py`, which will che
 
 ### Submit your solution
 
-Once you have a solution that works, submit it via Pull Request on Github or by emailing your solution to scott@paperlessparts.com. By accepting an award for your solution, you are granting Paperless Parts, Inc. unlimited and petpetrual rights to use and extend your solution commercially.
+Once you have a solution that works, submit it via Pull Request on Github or by emailing your solution to scott@paperlessparts.com. By accepting an award for your solution, you are granting Paperless Parts, Inc. unlimited and perpetual rights to use and extend your solution commercially.
 
-You can also email us questions prior to solving the problem. We will try our best to repsond in a timely manner.
+You can also email us questions prior to solving the problem. We will try our best to respond in a timely manner.
