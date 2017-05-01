@@ -10,25 +10,25 @@ If you have experience with **Python and FreeCAD**, take a shot at completing th
 How to Participate
 ------------------
 
-###Review the design issues you need to detect
+### Review the design issues you need to detect
 
 The design issues to be detected are listed in this PDF: [http://bit.ly/2pykH8B](http://bit.ly/2pykH8B)
 
-###Clone this repository
+### Clone this repository
 
 `git clone git@github.com:paperlessPARTS/cad-challenge.git`
 
 A `cad-challenge/` folder will be created. Do your work in here.
 
-###Create an algorithm
+### Create an algorithm
 
 Create any files, classes and functions you need to complete the challenge. Your solution must be run by calling the `dfm_check` function in `solution.py`. See the code comments for more information. If you introduce dependencies (other than FreeCAD), be sure to list them in `requirements.txt`. 
 
-###Test your solution
+### Test your solution
 
 To test your solution, run the unit tests contained in `test.py`, which will check your algorithm using the test STEP files included in the `step_files/` folder. On Unix/Linux/Mac systems, you can run these tests using the included `test_solution.sh` script. We evaluate your solution by running these tests in addition to running the algorithm on a "hold out" set of different parts with the same design issues.
 
-###Submit your solution
+### Submit your solution
 
 Once you have a solution that works, submit it via Pull Request on Github or by emailing your solution to scott@paperlessparts.com. By accepting an award for your solution, you are granting Paperless Parts, Inc. unlimited and petpetrual rights to use and extend your solution commercially.
 
