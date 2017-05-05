@@ -26,7 +26,7 @@ class TestSolution(unittest.TestCase):
             {'issues': [issue]},
             result)
         result = dfm_check('step_files/radius_both_edges.STEP')
-        self.assertGreater(result['issues'], 0)
+        self.assertGreater(len(result['issues']), 0)
         for i in result['issues']:
             self.assertEqual(issue, i)
 
