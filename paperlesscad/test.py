@@ -1,5 +1,11 @@
 import unittest
+from collections import Counter
 from paperlesscad.solution import dfm_check
+
+
+def summarize(results):
+    "Helper function to make it easy to check raised issues."
+    return Counter(i['issue'] for i in results['issues'])
 
 
 class TestSolution(unittest.TestCase):
@@ -84,6 +90,51 @@ class TestSolution(unittest.TestCase):
             'counter-bore',
             result['issues'][0]['issue'])
         self.assertTrue(len(result['issues'][0]['faces']) >= 1)
+
+    def test_small_outside_edge(self):
+        result = dfm_check('step_files/small_outside_edge.step')
+        self.assertEqual(result, {'issues': []})
+
+    def test_small_outside_radii(self):
+        result = dfm_check('step_files/small_outside_radii.step')
+        self.assertEqual(result, {'issues': []})
+
+    def test_thin_cut_large_ends(self):
+        result = dfm_check('step_files/thin_cut_large_ends.step')
+        summary = summarize(result)
+        self.assertIn('small-cut', summary)
+
+    def test_thin_cut_from_outside(self):
+        result = dfm_check('step_files/thin_cut_from_outside.step')
+        summary = summarize(result)
+        self.assertIn('small-cut', summary)
+
+    def test_sharp_internal_corner(self):
+        result = dfm_check('step_files/sharp_internal_corner.step')
+        summary = summarize(result)
+        # TODO This might need a new issue type to cover properly.
+        self.assertIn('small-hole', summary)
+
+    def test_counter_confusion(self):
+        result = dfm_check('step_files/counter_confusion.step')
+        summary = summarize(result)
+        self.assertNotIn('counter-bore', summary)
+        self.assertNotIn('counter-sink', summary)
+        # TODO Is "non-uniform" the correct issue type for this file?
+        self.assertIn('non-uniform', summary)
+
+    def test_manufacturable_extrusion(self):
+        # This file contains surfaces of type SurfaceOfExtrusion.
+        result = dfm_check('step_files/manufacturable_extrusion.step')
+        self.assertEqual(result, {'issues': []})
+
+    def test_manufacturable_splines(self):
+        # This file contains surfaces of type BSplineSurface.
+        result = dfm_check('step_files/manufacturable_splines.step')
+        self.assertEqual(result, {'issues': []})
+
+    # TODO May also want to handle BezierSurface, OffsetSurface, PlateSurface
+    # SurfaceOfRevolution, and TrimmedSurface.
 
 if __name__ == '__main__':
     unittest.main()
