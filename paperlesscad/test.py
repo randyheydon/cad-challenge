@@ -109,8 +109,19 @@ class TestSolution(unittest.TestCase):
         summary = summarize(result)
         self.assertIn('small-cut', summary)
 
+    def test_thin_cut_between_radii(self):
+        result = dfm_check('step_files/thin_cut_between_radii.step')
+        summary = summarize(result)
+        self.assertIn('small-cut', summary)
+
     def test_sharp_internal_corner(self):
         result = dfm_check('step_files/sharp_internal_corner.step')
+        summary = summarize(result)
+        # TODO This might need a new issue type to cover properly.
+        self.assertIn('small-hole', summary)
+
+    def test_small_radius_internal_corner(self):
+        result = dfm_check('step_files/small_radius_internal_corner.step')
         summary = summarize(result)
         # TODO This might need a new issue type to cover properly.
         self.assertIn('small-hole', summary)
