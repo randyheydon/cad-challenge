@@ -117,14 +117,17 @@ class TestSolution(unittest.TestCase):
     def test_sharp_internal_corner(self):
         result = dfm_check('step_files/sharp_internal_corner.step')
         summary = summarize(result)
-        # TODO This might need a new issue type to cover properly.
-        self.assertIn('small-hole', summary)
+        self.assertIn('tight-corner', summary)
 
     def test_small_radius_internal_corner(self):
         result = dfm_check('step_files/small_radius_internal_corner.step')
         summary = summarize(result)
-        # TODO This might need a new issue type to cover properly.
-        self.assertIn('small-hole', summary)
+        self.assertIn('tight-corner', summary)
+
+    def test_shallow_internal_corner(self):
+        result = dfm_check('step_files/shallow_internal_corner.step')
+        summary = summarize(result)
+        self.assertIn('tight-corner-mild', summary)
 
     def test_counter_confusion(self):
         result = dfm_check('step_files/counter_confusion.step')
