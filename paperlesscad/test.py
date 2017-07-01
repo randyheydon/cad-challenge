@@ -138,21 +138,20 @@ class TestSolution(unittest.TestCase):
         summary = summarize(result)
         self.assertNotIn('counter-bore', summary)
         self.assertNotIn('counter-sink', summary)
-        # TODO Is "non-uniform" the correct issue type for this file?
         self.assertIn('non-uniform', summary)
 
     def test_manufacturable_extrusion(self):
-        # This file contains surfaces of type SurfaceOfExtrusion.
         result = dfm_check('step_files/manufacturable_extrusion.step')
         self.assertEqual(result, {'issues': []})
 
     def test_manufacturable_splines(self):
-        # This file contains surfaces of type BSplineSurface.
         result = dfm_check('step_files/manufacturable_splines.step')
         self.assertEqual(result, {'issues': []})
 
-    # TODO May also want to handle BezierSurface, OffsetSurface, PlateSurface
-    # SurfaceOfRevolution, and TrimmedSurface.
+    def test_unmanufacturable_extrusion(self):
+        result = dfm_check('step_files/unmanufacturable_extrusion.step')
+        summary = summarize(result)
+        self.assertIn('non-uniform', summary)
 
 if __name__ == '__main__':
     unittest.main()

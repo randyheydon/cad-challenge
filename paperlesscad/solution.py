@@ -54,12 +54,10 @@ def dfm_check(step_path):
         c for c in cones
         if (is_close(c.Surface.Axis.x, 0) and is_close(c.Surface.Axis.y, 0)
             and is_close(abs(c.Surface.Axis.z), 1)))
-    # TODO There are a bunch of other FreeCAD surface types.  We will assume
-    # that none of them are manufacturable in flat parts.  Sphere and Toroid
-    # are definitely no good, but the others could maybe use further
-    # consideration.  Bezier and BSpline in particular could be manufacturable
-    # in certain circumstances (like the BSplines in milled_pocket.STEP).
-    leftovers = set(faces) - planes - cylinders - cones
+    bad_surfaces = set(
+        f for f in faces
+        if isinstance(f.Surface, (Part.Sphere, Part.Toroid)))
+    leftovers = set(faces) - planes - cylinders - cones - bad_surfaces
 
     # Construct map of which faces are connected to a given edge.
     # There is usually two faces per edge, but sometimes only one.  I don't
@@ -82,12 +80,28 @@ def dfm_check(step_path):
         v.remove(k)
 
     # Start by checking for things that are well outside our problem space.  If
-    # a part does not have top and bottom planes or if it has any unhandled
+    # a part does not have top and bottom planes or if it has any known-bad
     # surface types, then the rest of the code does not apply.  Just call it
     # "non-uniform" and quit.
-    if len(horizontal_planes) < 2 or leftovers:
+    if len(horizontal_planes) < 2 or bad_surfaces:
         issues.append({'issue': 'non-uniform', 'faces': None})
         return {'issues': issues}
+
+    # If there are any of the more unusual surfaces, use a heuristic to see if
+    # they're okay.  Put a grid of points over the surface and check the normal
+    # at each point; if all normals have no vertical component, then we can
+    # probably assume that the whole surface is like that.  In such a case, the
+    # surface should be cuttable; otherwise, it's definitely not.
+    # As above, if issues are found, then the rest of the code does not apply.
+    n_points = 20
+    for f in leftovers:
+        u1, u2, v1, v2 = f.ParameterRange
+        for a, b in product(range(n_points), repeat=2):
+            u = (u2 - u1) * a / n_points + u1
+            v = (v2 - v1) * b / n_points + v1
+            if not is_close(f.normalAt(u, v).z, 0):
+                issues.append({'issue': 'non-uniform', 'faces': None})
+                return {'issues': issues}
 
     # Check for any cylinders or cones that are not vertical.  These will be
     # considered as radiused edges.
