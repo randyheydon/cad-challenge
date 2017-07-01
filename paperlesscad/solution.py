@@ -119,34 +119,32 @@ def dfm_check(step_path):
 
     # Check for counterbores.  This will be anywhere that two cylinders of
     # different radii have the same axis and are connected with a horizontal
-    # plane.  First find cylinders with aligned centers, then find the surface
-    # that is connected to both of them.
+    # plane.  In each horizontal plane, check all cylinders connected to it to
+    # see if they look like counterbores.
     # Also track those connecting planes, since they are otherwise non-uniform.
-    # NOTE I'm not really checking connectivity, but I'm faking it by checking
-    # that the plane's outer edge is a circle centered on the same axis, and
-    # that the center is in the bounding box of each cylinder.  This could fail
-    # if the part has some floating point error in it.  This could also
-    # potentially misidentify certain pathological cases.
     counterbore_planes = set()
-    for c1, c2 in combinations(vertical_cylinders, 2):
-        aligned = (is_close(c1.Surface.Center.x, c2.Surface.Center.x)
-                   and is_close(c1.Surface.Center.y, c2.Surface.Center.y))
-        if aligned:
-            for p in horizontal_planes:
-                edge = p.OuterWire.Edges[0].Curve
-                if not isinstance(edge, Part.Circle):
-                    continue
-                edge_aligned = (
-                    is_close(c1.Surface.Center.x, edge.Center.x)
-                    and is_close(c1.Surface.Center.y, edge.Center.y)
-                    and c1.BoundBox.isInside(edge.Center)
-                    and c2.BoundBox.isInside(edge.Center))
-                if edge_aligned:
-                    issues.append({
-                        'issue': 'counter-bore',
-                        'faces': [faces.index(c1), faces.index(c2),
-                                  faces.index(p)]})
-                    counterbore_planes.add(p)
+    for p in horizontal_planes:
+        # Get all concave vertical cylinders connected to this plane.
+        connected_faces = [f.Shape for f in face_to_faces[HashShape(p)]]
+        connected_cyls = vertical_cylinders.intersection(connected_faces)
+        concave_cyls = [c for c in connected_cyls if is_concave(c)]
+        # Compare these cylinders to each other in pairs.
+        for c1, c2 in combinations(concave_cyls, 2):
+            # If the cylinders have the same radii or the same vertical limits,
+            # then they probably can't be considered counterbores.
+            if is_close(c1.Surface.Radius, c2.Surface.Radius):
+                continue
+            if is_close(c1.BoundBox.ZMax, c2.BoundBox.ZMax):
+                continue
+            # If the cylinders do not align, then don't call them counterbores.
+            aligned = (is_close(c1.Surface.Center.x, c2.Surface.Center.x)
+                       and is_close(c1.Surface.Center.y, c2.Surface.Center.y))
+            if not aligned:
+                continue
+            issues.append({
+                'issue': 'counter-bore',
+                'faces': [faces.index(c1), faces.index(c2), faces.index(p)]})
+            counterbore_planes.add(p)
 
     # Check for small holes.  These are cylinders with diameters less than the
     # part thickness, or less than 0.125" (3.175 mm).
