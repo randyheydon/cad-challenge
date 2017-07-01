@@ -11,15 +11,10 @@ from __future__ import absolute_import, division, print_function
 
 from itertools import chain, combinations, product
 
+from paperlesscad.utils import is_close, HashShape, is_concave
+
 import FreeCAD
 import Part
-
-
-def is_close(a, b, tol=1e-13):
-    "Helper function for inexact floating point comparison."
-    # NOTE Found this necessary in draft.STEP.  Nowhere else so far.  But it
-    # will be necessary for arbitrary data.
-    return abs(a - b) < tol
 
 
 def dfm_check(step_path):
@@ -56,6 +51,27 @@ def dfm_check(step_path):
     # in certain circumstances (like the BSplines in milled_pocket.STEP).
     leftovers = set(faces) - planes - cylinders - cones
 
+    # Construct map of which faces are connected to a given edge.
+    # There is usually two faces per edge, but sometimes only one.  I don't
+    # think that more than two is possible, but let's not assume.
+    # NOTE FreeCAD 0.17 will have an "ancestorsOfType" method that could
+    # simplify or replace this code.  See FreeCAD commit f9bfd775.
+    edge_to_faces = {HashShape(e): set() for e in shape.Edges}
+    for f in faces:
+        for e in f.Edges:
+            edge_to_faces[HashShape(e)].add(HashShape(f))
+
+    # Construct map of which faces are adjacent to a given face (i.e. all faces
+    # that share an edge with this face).
+    face_to_faces = {HashShape(f): set() for f in faces}
+    for f in faces:
+        for e in f.Edges:
+            face_to_faces[HashShape(f)].update(edge_to_faces[HashShape(e)])
+    for k, v in face_to_faces.iteritems():
+        # Don't consider a face as connected to itself.
+        v.remove(k)
+        #v.difference_update(horizontal_planes)
+
     # Start by checking for things that are well outside our problem space.  If
     # a part does not have top and bottom planes or if it has any unhandled
     # surface types, then the rest of the code does not apply.  Just call it
@@ -72,20 +88,34 @@ def dfm_check(step_path):
         issues.append({'issue': 'radius', 'faces': None})
 
     # Check for countersinks.  This will be anywhere that a cone and a cylinder
-    # have the same axis and are connected at an edge.
+    # have the same axis, are connected at an edge, and are both concave.
     # Also track the cones involved here, since any that are not part of
     # countersinks must instead be a draft or a chamfer.
-    # NOTE Connectivity is not really checked because I'm not sure how.  Could
-    # check that the distance between the faces is zero, but it's expensive.
     countersink_cones = set()
-    for cyl, cone in product(vertical_cylinders, vertical_cones):
-        aligned = (is_close(cyl.Surface.Center.x, cone.Surface.Center.x)
-                   and is_close(cyl.Surface.Center.y, cone.Surface.Center.y))
-        if aligned:
-            issues.append({
-                'issue': 'counter-sink',
-                'faces': [faces.index(cyl), faces.index(cone)]})
-            countersink_cones.add(cone)
+    for surfs in edge_to_faces.itervalues():
+        s = [surf.Shape for surf in surfs]
+        # Sometimes an edge connects to only one face.  Maybe it could connect
+        # to more than two faces.  Skip those cases.
+        if len(s) != 2:
+            continue
+        # Check if the surface pair is exactly one cone and one cylinder.
+        cone_cyl = ((s[0] in vertical_cones and s[1] in vertical_cylinders)
+                    or (s[1] in vertical_cones and s[0] in vertical_cylinders))
+        if not cone_cyl:
+            continue
+        # Check that both cone and cylinder are concave.
+        if not (is_concave(s[0]) and is_concave(s[1])):
+            continue
+        # Check that the axes of the cone and cylinder are aligned.
+        aligned = (is_close(s[0].Surface.Center.x, s[1].Surface.Center.x)
+                   and is_close(s[0].Surface.Center.y, s[1].Surface.Center.y))
+        if not aligned:
+            continue
+        # If we've made it this far, then we can consider it a countersink.
+        issues.append({
+            'issue': 'counter-sink',
+            'faces': [faces.index(s[0]), faces.index(s[1])]})
+        countersink_cones.add(vertical_cones.intersection(s).pop())
 
     # Check for counterbores.  This will be anywhere that two cylinders of
     # different radii have the same axis and are connected with a horizontal
