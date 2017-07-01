@@ -17,12 +17,22 @@ import FreeCAD
 import Part
 
 
+# If desired, a custom kerf width (cut size) can be set here.
+# If left as None, a kerf width will be set automatically below.
+kerf_width_override = None
+
+
 def dfm_check(step_path):
     """Place your solution in this function. Create and call other functions, 
     classes, modules, and packages as required."""
     shape = Part.Shape()
     shape.read(step_path)
     issues = []
+
+    # Default kerf width is set as the part thickness, to a minimum of 0.125".
+    kerf_width = kerf_width_override
+    if kerf_width is None:
+        kerf_width = max(3.175, shape.BoundBox.ZLength)
 
     # Break out sets of surfaces for later evaluation.
     faces = shape.Faces
@@ -147,15 +157,13 @@ def dfm_check(step_path):
             counterbore_planes.add(p)
 
     # Check for small holes.  These are cylinders with diameters less than the
-    # part thickness, or less than 0.125" (3.175 mm).
-    # NOTE This code also captures small outside radii; not sure if that is
-    # desired.
+    # kerf width.
     # NOTE This must happen after counterbore checks just because of the way
     # that test.py is currently configured.
-    min_radius = 0.5 * max(3.175, shape.BoundBox.ZLength)
+    min_radius = 0.5 * kerf_width
     small_holes = [
         faces.index(c) for c in vertical_cylinders
-        if c.Surface.Radius < min_radius]
+        if c.Surface.Radius < min_radius and is_concave(c)]
     if small_holes:
         issues.append({'issue': 'small-hole', 'faces': small_holes})
 
@@ -165,7 +173,7 @@ def dfm_check(step_path):
     # the part, with the short edges at top and/or bottom.
     # NOTE This will also capture small external features; not sure if that is
     # desired.
-    min_size = max(3.175, shape.BoundBox.ZLength)
+    min_size = kerf_width
     small_faces = []
     for f in planes - horizontal_planes:
         if not (is_close(f.BoundBox.ZMin, shape.BoundBox.ZMin)
