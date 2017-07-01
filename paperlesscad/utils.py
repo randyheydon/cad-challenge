@@ -41,4 +41,4 @@ def is_concave(face):
     center = face.Surface.Center
     # Check that the vector from center to point on surface is opposite to the
     # normal vector at that point.
-    return center.multiply(-1).add(loc).dot(norm) < 0
+    return (loc - center).dot(norm) < 0

@@ -80,7 +80,6 @@ def dfm_check(step_path):
     for k, v in face_to_faces.iteritems():
         # Don't consider a face as connected to itself.
         v.remove(k)
-        #v.difference_update(horizontal_planes)
 
     # Start by checking for things that are well outside our problem space.  If
     # a part does not have top and bottom planes or if it has any unhandled
