@@ -124,6 +124,10 @@ class TestSolution(unittest.TestCase):
         summary = summarize(result)
         self.assertIn('tight-corner', summary)
 
+    def test_large_radius_internal_corner(self):
+        result = dfm_check('step_files/large_radius_internal_corner.step')
+        self.assertEqual(result, {'issues': []})
+
     def test_shallow_internal_corner(self):
         result = dfm_check('step_files/shallow_internal_corner.step')
         summary = summarize(result)
