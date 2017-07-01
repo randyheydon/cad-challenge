@@ -10,6 +10,7 @@ available via `pip`, please include installation instructions.
 from __future__ import absolute_import, division, print_function
 
 from itertools import chain, combinations, product
+from math import pi
 
 from paperlesscad.utils import is_close, HashShape, is_concave
 
@@ -109,6 +110,57 @@ def dfm_check(step_path):
     # none of those are being checked for here, so just call them all "radius".
     if (cylinders - vertical_cylinders) or (cones - vertical_cones):
         issues.append({'issue': 'radius', 'faces': None})
+
+    # Check for sharp internal corners.  Look for vertical edges, then evaluate
+    # the attached faces to see if they meet at a significant angle, and
+    # whether they form a convex or concave corner.
+    # NOTE This will not work for an edge that's connected to only one face.
+    # If that face connects to itself with a sharp angle, this code will not
+    # detect that properly.  An edge connected to more than two faces is also
+    # ignored because I don't know what that would look like.
+    # The difference between "tight-corner" and "tight-corner-mild" is defined
+    # here as being ten degrees.
+    shallow_limit = 10 * pi/180
+    for e, fs in edge_to_faces.iteritems():
+        if len(fs) != 2:
+            continue
+        fs = list(fs)
+        # Check if we have a vertical edge.
+        curve = e.Shape.Curve
+        if not isinstance(curve, Part.Line):
+            continue
+        edge_vec = curve.EndPoint - curve.StartPoint
+        if not (is_close(edge_vec.x, 0) and is_close(edge_vec.y, 0)):
+            continue
+        normals = []
+        # Calculate the normals of all surfaces meeting at that edge.
+        for f in fs:
+            params = f.Shape.Surface.parameter(curve.StartPoint)
+            normals.append(f.Shape.normalAt(*params))
+        # Compare angles between all normals.
+        # NOTE Found that tolerance on angles needed loosening so as to not
+        # give a spurious error for milled_pocket.STEP.  Should not be an issue
+        # since any angle that close to zero is definitely not a problem.
+        angle = normals[0].getAngle(normals[1])
+        if is_close(angle, 0, tol=1e-6):
+            continue
+        elif angle > shallow_limit:
+            possible_issue = {'issue': 'tight-corner', 'faces': None}
+        else:
+            possible_issue = {'issue': 'tight-corner-mild', 'faces': None}
+        # Check if the corner is internal or external.  This is done by
+        # creating a test point slightly away from the edge, in the direction
+        # of the average of the surface normals.  This point is then projected
+        # onto each surface.  If the projected point is outside of the limits
+        # of both surfaces, then it is an external (convex) corner.
+        test_point = ((normals[0] + normals[1]).normalize().multiply(0.001)
+                      + curve.StartPoint)
+        for f in fs:
+            ut, vt = f.Shape.Surface.parameter(test_point)
+            u1, u2, v1, v2 = f.Shape.ParameterRange
+            if (u1 <= ut <= u2) and (v1 <= vt <= v2):
+                issues.append(possible_issue)
+                break
 
     # Check for countersinks.  This will be anywhere that a cone and a cylinder
     # have the same axis, are connected at an edge, and are both concave.
