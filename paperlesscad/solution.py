@@ -248,29 +248,35 @@ def dfm_check(step_path):
             else:
                 issues.append({'issue': 'tight-corner-mild', 'faces': None})
 
-    # Check for small cuts.  We'll look for any horizontal edges that are
-    # shorter than the part thickness, or shorter than 0.125" (3.175 mm).
-    # We'll only look for surfaces that extend through the full thickness of
-    # the part, with the short edges at top and/or bottom.
-    # NOTE This will also capture small external features; not sure if that is
-    # desired.
-    min_size = kerf_width
-    small_faces = []
-    for f in planes - horizontal_planes:
-        if not (is_close(f.BoundBox.ZMin, shape.BoundBox.ZMin)
-                and is_close(f.BoundBox.ZMax, shape.BoundBox.ZMax)):
-            continue
-        for e in f.Edges:
-            short = (isinstance(e.Curve, Part.Line)
-                     and is_close(e.BoundBox.ZLength, 0)
-                     and (is_close(e.BoundBox.ZMin, shape.BoundBox.ZMin)
-                          or is_close(e.BoundBox.ZMax, shape.BoundBox.ZMax))
-                     and e.Curve.length() < min_size)
-            if short:
-                small_faces.append(faces.index(f))
-                break
-    if small_faces:
-        issues.append({'issue': 'small-cut', 'faces': small_faces})
+    # Check for small cuts.  Looks for any faces (not counting the horizontal
+    # ones) that are not connected to each other, checks the distance between
+    # them, then checks whether the space between them is solid or void.
+    # NOTE This is currently very slow compared to the rest of the checks
+    # because of the distToShape calls; on the test pieces, distToShape takes
+    # up two-thirds of the total run time.  So this should be improved.
+    seen = set()
+    for f1 in set(faces) - horizontal_planes:
+        seen.add(f1)
+        connected_fs = {f2.Shape for f2 in face_to_faces[HashShape(f1)]}
+        interesting_fs = set(faces) - connected_fs - horizontal_planes - seen
+        for f2 in interesting_fs:
+            dist, vecs, info = f1.distToShape(f2)
+            if dist > kerf_width:
+                continue
+            # Check that the vector from one face to the other is in the same
+            # general direction as the face normal.  If they are, then this is
+            # empty area, and is an issue.  Otherwise, this is a thin solid
+            # section that should not be a problem.
+            trans1 = vecs[0][1] - vecs[0][0]
+            n1 = f1.normalAt(*f1.Surface.parameter(vecs[0][0]))
+            if n1.dot(trans1) < 0:
+                continue
+            trans2 = trans1.multiply(-1)
+            n2 = f2.normalAt(*f2.Surface.parameter(vecs[0][1]))
+            if n2.dot(trans2) < 0:
+                continue
+            issues.append({'issue': 'small-cut',
+                           'faces': [faces.index(f1), faces.index(f2)]})
 
     # Check for drafts and chamfers.  These will be any planes on an angle and
     # any vertical cones that are not already considered countersinks.  Drafts
