@@ -152,15 +152,19 @@ def dfm_check(step_path):
         # creating a test point slightly away from the edge, in the direction
         # of the average of the surface normals.  This point is then projected
         # onto each surface.  If the projected point is outside of the limits
-        # of both surfaces, then it is an external (convex) corner.
+        # of at least one surface, then it is an external (convex) corner.
         test_point = ((normals[0] + normals[1]).normalize().multiply(0.001)
                       + curve.StartPoint)
+        # NOTE This is the rarely used for-else construct.  The else clause
+        # will happen only if no break occurs in the for loop.  This therefore
+        # checks that the test point is outside all connected surfaces.
         for f in fs:
             ut, vt = f.Shape.Surface.parameter(test_point)
             u1, u2, v1, v2 = f.Shape.ParameterRange
-            if (u1 <= ut <= u2) and (v1 <= vt <= v2):
-                issues.append(possible_issue)
+            if not ((u1 <= ut <= u2) and (v1 <= vt <= v2)):
                 break
+        else:
+            issues.append(possible_issue)
 
     # Check for countersinks.  This will be anywhere that a cone and a cylinder
     # have the same axis, are connected at an edge, and are both concave.
