@@ -131,6 +131,11 @@ class TestSolution(unittest.TestCase):
         summary = summarize(result)
         self.assertIn('tight-corner-mild', summary)
 
+    def test_shallow_internal_radius(self):
+        result = dfm_check('step_files/shallow_internal_radius.step')
+        summary = summarize(result)
+        self.assertIn('tight-corner-mild', summary)
+
     def test_counter_confusion(self):
         result = dfm_check('step_files/counter_confusion.step')
         summary = summarize(result)

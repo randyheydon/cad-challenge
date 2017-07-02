@@ -221,16 +221,28 @@ def dfm_check(step_path):
                 'faces': [faces.index(c1), faces.index(c2), faces.index(p)]})
             counterbore_planes.add(p)
 
-    # Check for small holes.  These are cylinders with diameters less than the
-    # kerf width.
+    # Check for small holes and too-small corners.  These are cylinders with
+    # diameters less than the kerf width.  Small holes and tight corners are
+    # distinguished based on whether that cylinder connects to anything other
+    # than cylinders and cones.  Tight corners are further divided into mild
+    # and regular, as in the sharp corner code above.
     # NOTE This must happen after counterbore checks just because of the way
     # that test.py is currently configured.
     min_radius = 0.5 * kerf_width
-    small_holes = [
-        faces.index(c) for c in vertical_cylinders
-        if c.Surface.Radius < min_radius and is_concave(c)]
-    if small_holes:
-        issues.append({'issue': 'small-hole', 'faces': small_holes})
+    for c in vertical_cylinders:
+        if not (c.Surface.Radius < min_radius and is_concave(c)):
+            continue
+        connected_fs = {f.Shape for f in face_to_faces[HashShape(c)]}
+        interesting_fs = connected_fs - horizontal_planes - cylinders - cones
+        if not interesting_fs:
+            issues.append({'issue': 'small-hole', 'faces': [faces.index(c)]})
+        else:
+            u1, u2, v1, v2 = c.ParameterRange
+            angle = c.normalAt(u1, v1).getAngle(c.normalAt(u2, v2))
+            if angle > shallow_limit:
+                issues.append({'issue': 'tight-corner', 'faces': None})
+            else:
+                issues.append({'issue': 'tight-corner-mild', 'faces': None})
 
     # Check for small cuts.  We'll look for any horizontal edges that are
     # shorter than the part thickness, or shorter than 0.125" (3.175 mm).
