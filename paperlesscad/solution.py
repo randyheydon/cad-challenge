@@ -272,7 +272,16 @@ def dfm_check(step_path):
                     break
             if is_tight_corner:
                 continue
-            # Check distance between faces.
+            # Precise distance checks are expensive, so first check if the
+            # bounding boxes of the two surfaces are close enough to even
+            # potentially be a concern.
+            bound_box1 = f1.BoundBox
+            bound_box1.enlarge(0.5 * kerf_width)
+            bound_box2 = f2.BoundBox
+            bound_box2.enlarge(0.5 * kerf_width)
+            if not bound_box1.intersect(bound_box2):
+                continue
+            # If bounding boxes are close, next check precise distance.
             dist, vecs, info = f1.distToShape(f2)
             if dist > kerf_width:
                 continue
