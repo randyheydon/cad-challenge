@@ -116,11 +116,13 @@ class TestSolution(unittest.TestCase):
         result = dfm_check('step_files/sharp_internal_corner.step')
         summary = summarize(result)
         self.assertIn('tight-corner', summary)
+        self.assertNotIn('small-cut', summary)
 
     def test_small_radius_internal_corner(self):
         result = dfm_check('step_files/small_radius_internal_corner.step')
         summary = summarize(result)
         self.assertIn('tight-corner', summary)
+        self.assertNotIn('small-cut', summary)
 
     def test_large_radius_internal_corner(self):
         result = dfm_check('step_files/large_radius_internal_corner.step')
@@ -130,11 +132,13 @@ class TestSolution(unittest.TestCase):
         result = dfm_check('step_files/shallow_internal_corner.step')
         summary = summarize(result)
         self.assertIn('tight-corner-mild', summary)
+        self.assertNotIn('small-cut', summary)
 
     def test_shallow_internal_radius(self):
         result = dfm_check('step_files/shallow_internal_radius.step')
         summary = summarize(result)
         self.assertIn('tight-corner-mild', summary)
+        self.assertNotIn('small-cut', summary)
 
     def test_counter_confusion(self):
         result = dfm_check('step_files/counter_confusion.step')

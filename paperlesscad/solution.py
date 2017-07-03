@@ -233,6 +233,7 @@ def dfm_check(step_path):
     # NOTE This must happen after counterbore checks just because of the way
     # that test.py is currently configured.
     min_radius = 0.5 * kerf_width
+    tight_corner_sets = []
     for c in vertical_cylinders:
         if not (c.Surface.Radius < min_radius and is_concave(c)):
             continue
@@ -241,6 +242,8 @@ def dfm_check(step_path):
         if not interesting_fs:
             issues.append({'issue': 'small-hole', 'faces': [faces.index(c)]})
         else:
+            # Track faces attached to this corner for us in small cut checks.
+            tight_corner_sets.append(interesting_fs)
             u1, u2, v1, v2 = c.ParameterRange
             angle = c.normalAt(u1, v1).getAngle(c.normalAt(u2, v2))
             if angle > shallow_limit:
@@ -260,6 +263,16 @@ def dfm_check(step_path):
         connected_fs = {f2.Shape for f2 in face_to_faces[HashShape(f1)]}
         interesting_fs = set(faces) - connected_fs - horizontal_planes - seen
         for f2 in interesting_fs:
+            # A small radius in an internal corner can be confused for a thin
+            # cut.  Ignore any face pairs that are part of such a corner.
+            is_tight_corner = False
+            for tight_corner in tight_corner_sets:
+                if tight_corner.issuperset([f1, f2]):
+                    is_tight_corner = True
+                    break
+            if is_tight_corner:
+                continue
+            # Check distance between faces.
             dist, vecs, info = f1.distToShape(f2)
             if dist > kerf_width:
                 continue
