@@ -254,9 +254,6 @@ def dfm_check(step_path):
     # Check for small cuts.  Looks for any faces (not counting the horizontal
     # ones) that are not connected to each other, checks the distance between
     # them, then checks whether the space between them is solid or void.
-    # NOTE This is currently very slow compared to the rest of the checks
-    # because of the distToShape calls; on the test pieces, distToShape takes
-    # up two-thirds of the total run time.  So this should be improved.
     seen = set()
     for f1 in set(faces) - horizontal_planes:
         seen.add(f1)
